@@ -3,29 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Video Studio</title>
+  <title>AI Premium Video Studio</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
-    body { background-color: #0d1117; color: #fff; padding: 12px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-    header { text-align: center; margin: 10px 0 15px; }
-    h1 { color: #58a6ff; font-size: 22px; }
-    p { color: #8b949e; font-size: 13px; margin-top: 4px; }
-    .frame-card { width: 100%; max-width: 650px; height: 85vh; border-radius: 12px; overflow: hidden; border: 1px solid #30363d; background: #161b22; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-    iframe { width: 100%; height: 100%; border: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #0b0f17; color: #e6edf3; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px 14px; }
+    header { text-align: center; margin-bottom: 20px; }
+    h1 { color: #58a6ff; font-size: 24px; font-weight: 700; }
+    p.sub { color: #8b949e; font-size: 13px; margin-top: 4px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 480px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+    label { display: block; font-size: 13px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #f0f6fc; }
+    input[type="text"], textarea, select { width: 100%; padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+    input:focus, textarea:focus, select:focus { border-color: #58a6ff; }
+    textarea { min-height: 110px; resize: vertical; line-height: 1.4; }
+    .btn { width: 100%; background: #238636; color: white; border: none; padding: 15px; font-size: 16px; font-weight: 700; border-radius: 8px; margin-top: 20px; cursor: pointer; transition: 0.2s; }
+    .btn:hover { background: #2ea043; }
+    .btn:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+    .status-card { margin-top: 18px; display: none; padding: 14px; border-radius: 8px; font-size: 14px; text-align: center; line-height: 1.5; }
+    .video-wrap { width: 100%; margin-top: 18px; display: none; text-align: center; }
+    video { width: 100%; border-radius: 10px; border: 1px solid #30363d; background: #000; max-height: 480px; }
+    .dl-btn { display: inline-block; width: 100%; background: #1f6feb; color: #fff; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: 600; margin-top: 10px; font-size: 14px; text-align: center; }
   </style>
 </head>
 <body>
+
   <header>
-    <h1>AI Video Studio</h1>
-    <p>प्रॉम्प्ट लिखें और सीधे यहाँ वीडियो तैयार करें</p>
+    <h1>AI Video Generator Studio</h1>
+    <p class="sub">Replicate GPU Engine • Prompt to 4K Video</p>
   </header>
 
-  <div class="frame-card">
-    <iframe 
-      src="https://damo-vilab-modelscope-text-to-video-synthesis.hf.space"
-      allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
-      sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-downloads">
-    </iframe>
+  <div class="card">
+    <label for="apiToken">Replicate API Token (Key)</label>
+    <input type="text" id="apiToken" placeholder="r8_..." value="">
+    <span style="font-size: 11px; color: #8b949e;">अपनी Replicate चाबी (Paid Balance वाली) यहाँ डालें</span>
+
+    <label for="prompt">वीडियो का प्रॉम्प्ट (Prompt)</label>
+    <textarea id="prompt" placeholder="उदा: A fierce tiger slowly walking in a dense dark jungle, cinematic lighting, 4k ultra detailed, photorealistic..."></textarea>
+
+    <label for="aspectRatio">वीडियो का आकार (Aspect Ratio)</label>
+    <select id="aspectRatio">
+      <option value="9:16">9:16 (Shorts / Reels)</option>
+      <option value="16:9">16:9 (YouTube Landscape)</option>
+      <option value="1:1">1:1 (Square)</option>
+    </select>
+
+    <button class="btn" id="generateBtn" onclick="startGeneration()">वीडियो बनाएँ (Generate Video)</button>
+
+    <div class="status-card" id="statusCard"></div>
+
+    <div class="video-wrap" id="videoWrap">
+      <video id="finalVideo" controls autoplay loop playsinline></video>
+      <a id="downloadLink" class="dl-btn" href="#" download="ai_video.mp4">📥 वीडियो डाउनलोड करें (Save to Gallery)</a>
+    </div>
   </div>
+
+  <script>
+    async function startGeneration() {
+      const token = document.getElementById('apiToken').value.trim();
+      const prompt = document.getElementById('prompt').value.trim();
+      const aspectRatio = document.getElementById('aspectRatio').value;
+      const btn = document.getElementById('generateBtn');
+      const status = document.getElementById('statusCard');
+      const videoWrap = document.getElementById('videoWrap');
+      const finalVideo = document.getElementById('finalVideo');
+      const downloadLink = document.getElementById('downloadLink');
+
+      if (!token) return alert("कृपया अपनी Replicate API Token डालें!");
+      if (!prompt) return alert("कृपया वीडियो के लिए कोई प्रॉम्प्ट लिखें!");
+
+      btn.disabled = true;
+      btn.innerText = "प्रोसेसिंग चालू है...";
+      videoWrap.style.display = "none";
+      status.style.display = "block";
+      status.style.background = "#1f6feb22";
+      status.style.color = "#58a6ff";
+      status.innerText = "⏳ GPU सर्वर तैयार हो रहा है... रिक्वेस्ट भेजी जा रही है...";
+
+      try {
+        // Direct Replicate Prediction endpoint
+        const createRes = await fetch("https://api.replicate.com/v1/models/minimax/video-01/predictions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            input: {
+              prompt: prompt,
+              prompt_optimizer: true
+            }
+          })
+        });
+
+        const data = await createRes.json();
+        if (data.detail) throw new Error(data.detail);
+        if (data.error) throw new Error(data.error);
+
+        const pollUrl = data.urls.get;
+        pollStatus(pollUrl, token);
+      } catch (err) {
+        status.style.background = "#da363322";
+        status.style.color = "#f85149";
+        status.innerText = "त्रुटि: " + err.message;
+        btn.disabled = false;
+        btn.innerText = "वीडियो बनाएँ (Generate Video)";
+      }
+    }
+
+    function pollStatus(url, token) {
+      const status = document.getElementById('statusCard');
+      const btn = document.getElementById('generateBtn');
+      const videoWrap = document.getElementById('videoWrap');
+      const finalVideo = document.getElementById('finalVideo');
+      const downloadLink = document.getElementById('downloadLink');
+
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(url, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          const check = await res.json();
+
+          if (check.status === "succeeded") {
+            clearInterval(interval);
+            status.style.background = "#23863622";
+            status.style.color = "#3fb950";
+            status.innerText = "✅ आपका वीडियो सफलतापूर्वक तैयार हो गया!";
+            
+            const videoUrl = Array.isArray(check.output) ? check.output[0] : check.output;
+            finalVideo.src = videoUrl;
+            downloadLink.href = videoUrl;
+            videoWrap.style.display = "block";
+
+            btn.disabled = false;
+            btn.innerText = "नया वीडियो बनाएँ";
+          } else if (check.status === "failed" || check.status === "canceled") {
+            clearInterval(interval);
+            status.style.background = "#da363322";
+            status.style.color = "#f85149";
+            status.innerText = "वीडियो बनाने में विफलता: " + (check.error || "मॉडल फेल हो गया");
+            btn.disabled = false;
+            btn.innerText = "फिर से कोशिश करें";
+          } else {
+            status.innerText = "स्टेटस: " + check.status + "... AI वीडियो रेंडर कर रहा है (लगभग 1 से 2 मिनट)...";
+          }
+        } catch (e) {
+          clearInterval(interval);
+          status.innerText = "त्रुटि: " + e.message;
+          btn.disabled = false;
+        }
+      }, 5000);
+    }
+  </script>
 </body>
 </html>
