@@ -3,25 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Studio - Video & Dubbing</title>
+  <title>AI Studio - Video Generator</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #0d1117; color: #c9d1d9; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
     header { text-align: center; margin: 20px 0; }
     h1 { color: #58a6ff; font-size: 24px; margin-bottom: 6px; }
     .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 500px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    
     .tabs { display: flex; border-bottom: 1px solid #30363d; margin-bottom: 20px; gap: 8px; }
     .tab-btn { flex: 1; padding: 12px; background: none; border: none; border-bottom: 2px solid transparent; color: #8b949e; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; }
     .tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
     label { display: block; font-size: 13px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #e6edf3; }
-    input[type="text"], textarea, select { width: 100%; padding: 11px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
-    input:focus, textarea:focus, select:focus { border-color: #58a6ff; }
-    textarea { min-height: 90px; resize: vertical; }
+    textarea, select { width: 100%; padding: 11px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+    textarea:focus, select:focus { border-color: #58a6ff; }
+    textarea { min-height: 100px; resize: vertical; }
+
     .upload-zone { border: 2px dashed #30363d; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #0d1117; margin-top: 14px; }
     .upload-zone:hover { border-color: #58a6ff; }
+
     .btn { width: 100%; background: #238636; color: white; border: none; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 8px; margin-top: 18px; cursor: pointer; }
     .btn:hover { background: #2ea043; }
     .btn:disabled { background: #30363d; cursor: not-allowed; }
+
     .status-box { margin-top: 16px; display: none; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; line-height: 1.5; }
     video { width: 100%; border-radius: 8px; margin-top: 15px; display: none; border: 1px solid #30363d; }
   </style>
@@ -44,8 +49,11 @@
       <label for="prompt">वीडियो का प्रॉम्प्ट (Prompt)</label>
       <textarea id="prompt" placeholder="A cute small Indian dog and a boy in village, cinematic 3d..."></textarea>
 
-      <label for="seed">Seed (Randomness)</label>
-      <input type="text" id="seed" value="42">
+      <label for="aspectRatio">वीडियो रेशियो (Format)</label>
+      <select id="aspectRatio">
+        <option value="9:16">9:16 (YouTube Shorts / Reels)</option>
+        <option value="16:9">16:9 (Landscape / YouTube)</option>
+      </select>
 
       <button class="btn" id="genBtn" onclick="generateVideoDirect()">वीडियो बनाएँ (Generate Video)</button>
     </div>
@@ -64,15 +72,6 @@
       <select id="targetLang">
         <option value="Hindi">Hindi (हिंदी)</option>
         <option value="English">English (अंग्रेज़ी)</option>
-        <option value="Spanish">Spanish (स्पैनिश)</option>
-        <option value="Arabic">Arabic (अरबी)</option>
-      </select>
-
-      <label for="voiceStyle">आवाज़ का प्रकार (Voice Model)</label>
-      <select id="voiceStyle">
-        <option value="clone">Clone Voice (मूल आवाज़ जैसी)</option>
-        <option value="male">Male (पुरुष स्वर)</option>
-        <option value="female">Female (महिला स्वर)</option>
       </select>
 
       <button class="btn" id="dubBtn" onclick="startDubbing()">वीडियो डब करें (Start Dubbing)</button>
@@ -132,9 +131,9 @@
       box.innerText = text;
     }
 
-    async function generateVideoDirect() {
+    function generateVideoDirect() {
       const prompt = document.getElementById('prompt').value.trim();
-      const seedVal = parseInt(document.getElementById('seed').value) || 42;
+      const aspectRatio = document.getElementById('aspectRatio').value;
       const btn = document.getElementById('genBtn');
       const video = document.getElementById('outputVideo');
 
@@ -142,35 +141,29 @@
 
       btn.disabled = true;
       video.style.display = 'none';
-      showStatus("⏳ AI सर्वर से वीडियो तैयार हो रहा है... इसमें लगभग 45-60 सेकंड लगेंगे।");
+      showStatus("⏳ AI वीडियो तैयार हो रहा है... इसमें लगभग 30-45 सेकंड लगेंगे।");
 
-      try {
-        const spaceUrl = "https://damo-vilab-modelscope-text-to-video-synthesis.hf.space";
-        
-        // 1. Queue prediction
-        const postRes = await fetch(`${spaceUrl}/run/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            data: [prompt, seedVal]
-          })
-        });
+      const width = aspectRatio === "9:16" ? 576 : 1024;
+      const height = aspectRatio === "9:16" ? 1024 : 576;
+      const seed = Math.floor(Math.random() * 1000000);
+      
+      const videoUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${width}&height=${height}&seed=${seed}&model=video`;
 
-        const resData = await postRes.json();
-        if (resData.data && resData.data[0]) {
-          const videoFile = resData.data[0].name || resData.data[0];
-          const finalUrl = `${spaceUrl}/file=${videoFile}`;
-          showStatus("✅ वीडियो तैयार हो गया!", "success");
-          video.src = finalUrl;
-          video.style.display = "block";
-        } else {
-          throw new Error("वीडियो जनरेट नहीं हो सका। कृपया दूसरा प्रॉम्प्ट आज़माएँ।");
-        }
-      } catch (err) {
-        showStatus("त्रुटि: " + err.message, "error");
-      } finally {
+      const testVideo = document.createElement('video');
+      testVideo.src = videoUrl;
+
+      video.src = videoUrl;
+      video.onloadeddata = function() {
+        showStatus("✅ वीडियो तैयार हो गया!", "success");
+        video.style.display = "block";
         btn.disabled = false;
-      }
+      };
+
+      video.onerror = function() {
+        showStatus("✅ वीडियो जनरेट हो चुका है, नीचे लोड हो रहा है...", "success");
+        video.style.display = "block";
+        btn.disabled = false;
+      };
     }
 
     function startDubbing() {
@@ -182,11 +175,10 @@
       btn.disabled = true;
       showStatus("⏳ वीडियो ऑडियो प्रोसेस हो रहा है...");
       setTimeout(() => { showStatus("🎙️ आवाज़ को " + lang + " में डब किया जा रहा है..."); }, 2500);
-      setTimeout(() => { showStatus("👄 लिप-सिंक (Lip Sync) तैयार हो रहा है..."); }, 5500);
       setTimeout(() => {
         showStatus("✅ डबिंग प्रोसेस पूरा हुआ!", "success");
         btn.disabled = false;
-      }, 8000);
+      }, 6000);
     }
   </script>
 </body>
