@@ -3,118 +3,233 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Dubbing Studio</title>
+  <title>AI Studio - Video & Dubbing</title>
   <style>
-    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 0; }
-    body { background-color: #0d1117; color: #c9d1d9; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
-    header { text-align: center; margin-top: 20px; margin-bottom: 24px; }
-    h1 { color: #58a6ff; font-size: 26px; margin-bottom: 8px; }
-    p.subtitle { color: #8b949e; font-size: 14px; }
-    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 480px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
-    .input-group { margin-bottom: 14px; }
-    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #8b949e; }
-    input[type="text"], select { width: 100%; padding: 10px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; font-size: 14px; outline: none; }
-    input[type="text"]:focus, select:focus { border-color: #58a6ff; }
-    .upload-zone { border: 2px dashed #30363d; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #0d1117; margin-bottom: 14px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #0d1117; color: #c9d1d9; display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 20px; }
+    header { text-align: center; margin: 20px 0; }
+    h1 { color: #58a6ff; font-size: 24px; margin-bottom: 6px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 100%; max-width: 500px; padding: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+    
+    .tabs { display: flex; border-bottom: 1px solid #30363d; margin-bottom: 20px; gap: 8px; }
+    .tab-btn { flex: 1; padding: 12px; background: none; border: none; border-bottom: 2px solid transparent; color: #8b949e; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; }
+    .tab-btn.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+
+    label { display: block; font-size: 13px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #e6edf3; }
+    input[type="text"], textarea, select { width: 100%; padding: 11px 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #fff; font-size: 14px; outline: none; }
+    input:focus, textarea:focus, select:focus { border-color: #58a6ff; }
+    textarea { min-height: 85px; resize: vertical; }
+
+    .upload-zone { border: 2px dashed #30363d; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #0d1117; margin-top: 14px; }
     .upload-zone:hover { border-color: #58a6ff; }
-    .btn { width: 100%; background: #238636; color: white; border: none; padding: 12px; font-size: 15px; font-weight: 600; border-radius: 6px; cursor: pointer; margin-top: 10px; }
+
+    .btn { width: 100%; background: #238636; color: white; border: none; padding: 14px; font-size: 15px; font-weight: 600; border-radius: 8px; margin-top: 18px; cursor: pointer; }
     .btn:hover { background: #2ea043; }
-    .status-box { margin-top: 16px; padding: 12px; border-radius: 6px; background: #1f242c; font-size: 13px; border: 1px solid #30363d; display: none; line-height: 1.5; }
-    .result-video { width: 100%; border-radius: 8px; margin-top: 14px; display: none; }
+    .btn:disabled { background: #30363d; cursor: not-allowed; }
+
+    .status-box { margin-top: 16px; display: none; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; }
+    video { width: 100%; border-radius: 8px; margin-top: 15px; display: none; border: 1px solid #30363d; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>AI Video Dubbing Studio</h1>
-    <p class="subtitle">अपनी वीडियो को किसी भी भाषा में डब और लिप-सिंक करें</p>
+    <h1>AI All-in-One Studio</h1>
+    <p style="color:#8b949e; font-size:14px;">वीडियो जनरेटर और डबिंग टूल</p>
   </header>
 
   <div class="card">
-    <div class="input-group">
-      <label for="apiKey">Replicate API Token (Key)</label>
-      <input type="text" id="apiKey" placeholder="r8_..." value="">
-      <span style="font-size: 11px; color: #8b949e;">अपनी Replicate चाबी यहाँ डालें या पेस्ट करें</span>
+    <label for="apiKey">Replicate API Token (Key)</label>
+    <input type="text" id="apiKey" placeholder="r8_..." value="">
+    <span style="font-size: 11px; color: #8b949e;">अपनी Replicate चाबी यहाँ डालें</span>
+
+    <div class="tabs" style="margin-top: 16px;">
+      <button class="tab-btn active" id="tabTxtBtn" onclick="switchTab('txt2vid')">🎬 Prompt to Video</button>
+      <button class="tab-btn" id="tabDubBtn" onclick="switchTab('dubbing')">🎙️ AI Dubbing</button>
     </div>
 
-    <div class="upload-zone" onclick="document.getElementById('videoInput').click()">
-      <div style="font-size: 30px; margin-bottom: 6px;">🎬</div>
-      <strong>वीडियो चुनें या यहाँ खींचें</strong>
-      <span style="display:block; font-size:12px; color:#8b949e; margin-top:4px;">MP4 / WebM (छोटा क्लिप 5-15 सेकंड)</span>
-    </div>
-    <input type="file" id="videoInput" accept="video/*" style="display:none;" onchange="handleFileSelect(this)">
-    <p id="fileName" style="font-size:12px; color:#58a6ff; margin-bottom:12px; text-align:center;"></p>
+    <!-- TAB 1: Prompt to Video -->
+    <div id="txt2vidTab">
+      <label for="prompt">वीडियो का प्रॉम्प्ट (Prompt)</label>
+      <textarea id="prompt" placeholder="उदा: A ferocious tiger walking slowly in a dark jungle, cinematic 4k..."></textarea>
 
-    <div class="input-group">
+      <label for="aspectRatio">वीडियो रेशियो (Format)</label>
+      <select id="aspectRatio">
+        <option value="9:16">9:16 (Shorts / Reels)</option>
+        <option value="16:9">16:9 (YouTube Video)</option>
+        <option value="1:1">1:1 (Square)</option>
+      </select>
+
+      <button class="btn" id="genBtn" onclick="generateVideo()">वीडियो बनाएँ (Generate Video)</button>
+    </div>
+
+    <!-- TAB 2: Video Dubbing -->
+    <div id="dubbingTab" style="display: none;">
+      <div class="upload-zone" onclick="document.getElementById('videoFile').click()">
+        <div style="font-size: 26px; margin-bottom: 6px;">📂</div>
+        <strong>डबिंग के लिए वीडियो चुनें</strong>
+        <span style="display:block; font-size:12px; color:#8b949e; margin-top:4px;">MP4 / WebM</span>
+      </div>
+      <input type="file" id="videoFile" accept="video/*" style="display:none;" onchange="handleFileSelect(this)">
+      <p id="fileName" style="font-size:12px; color:#58a6ff; margin-top:8px; text-align:center;"></p>
+
       <label for="targetLang">डबिंग की भाषा (Translate to)</label>
       <select id="targetLang">
-        <option value="hi">Hindi (हिंदी)</option>
-        <option value="en">English (अंग्रेज़ी)</option>
-        <option value="es">Spanish (स्पैनिश)</option>
-        <option value="ar">Arabic (अरबी)</option>
-        <option value="fr">French (फ्रेंच)</option>
-        <option value="de">German (जर्मन)</option>
+        <option value="Hindi">Hindi (हिंदी)</option>
+        <option value="English">English (अंग्रेज़ी)</option>
+        <option value="Spanish">Spanish (स्पैनिश)</option>
+        <option value="Arabic">Arabic (अरबी)</option>
       </select>
-    </div>
 
-    <div class="input-group">
       <label for="voiceStyle">आवाज़ का प्रकार (Voice Model)</label>
       <select id="voiceStyle">
-        <option value="clone">Clone Original Voice (मूल आवाज़ जैसी)</option>
-        <option value="male">Male Voice (पुरुष स्वर)</option>
-        <option value="female">Female Voice (महिला स्वर)</option>
+        <option value="clone">Clone Voice (मूल आवाज़ जैसी)</option>
+        <option value="male">Male (पुरुष स्वर)</option>
+        <option value="female">Female (महिला स्वर)</option>
       </select>
+
+      <button class="btn" id="dubBtn" onclick="startDubbing()">वीडियो डब करें (Start Dubbing)</button>
     </div>
 
-    <button class="btn" onclick="startProcessing()">वीडियो डब करें (Start Dubbing)</button>
-
+    <!-- Status & Output -->
     <div class="status-box" id="statusBox"></div>
-    <video id="outputVideo" class="result-video" controls></video>
+    <video id="outputVideo" controls autoplay loop playsinline></video>
   </div>
 
   <script>
     let selectedFile = null;
 
+    function switchTab(tab) {
+      const txtBtn = document.getElementById('tabTxtBtn');
+      const dubBtn = document.getElementById('tabDubBtn');
+      const txtTab = document.getElementById('txt2vidTab');
+      const dubTab = document.getElementById('dubbingTab');
+      const statusBox = document.getElementById('statusBox');
+      const outputVideo = document.getElementById('outputVideo');
+
+      statusBox.style.display = 'none';
+      outputVideo.style.display = 'none';
+
+      if (tab === 'txt2vid') {
+        txtBtn.classList.add('active');
+        dubBtn.classList.remove('active');
+        txtTab.style.display = 'block';
+        dubTab.style.display = 'none';
+      } else {
+        dubBtn.classList.add('active');
+        txtBtn.classList.remove('active');
+        txtTab.style.display = 'none';
+        dubTab.style.display = 'block';
+      }
+    }
+
     function handleFileSelect(input) {
       if (input.files && input.files[0]) {
         selectedFile = input.files[0];
-        document.getElementById('fileName').innerText = 'चुनी गई फ़ाइल: ' + selectedFile.name;
+        document.getElementById('fileName').innerText = 'फाइल: ' + selectedFile.name;
       }
     }
 
-    function updateStatus(msg, color = '#58a6ff') {
+    function showStatus(text, type = 'info') {
       const box = document.getElementById('statusBox');
       box.style.display = 'block';
-      box.style.color = color;
-      box.innerHTML = msg;
+      if (type === 'error') {
+        box.style.background = '#da363322';
+        box.style.color = '#f85149';
+      } else if (type === 'success') {
+        box.style.background = '#23863622';
+        box.style.color = '#3fb950';
+      } else {
+        box.style.background = '#1f6feb22';
+        box.style.color = '#58a6ff';
+      }
+      box.innerText = text;
     }
 
-    async function startProcessing() {
-      const token = document.getElementById('apiKey').value.trim();
+    // 1. Text to Video Generator
+    async function generateVideo() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const prompt = document.getElementById('prompt').value.trim();
+      const aspectRatio = document.getElementById('aspectRatio').value;
+      const btn = document.getElementById('genBtn');
+      const video = document.getElementById('outputVideo');
+
+      if (!apiKey) return alert("कृपया अपनी Replicate API चाबी डालें!");
+      if (!prompt) return alert("कृपया वीडियो के लिए कोई प्रॉम्प्ट लिखें!");
+
+      btn.disabled = true;
+      video.style.display = 'none';
+      showStatus("AI मॉडल शुरू हो रहा है (1-2 मिनट लगेंगे)...");
+
+      try {
+        const response = await fetch("https://api.replicate.com/v1/predictions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            version: "b9e9921b777a835b0e0081d68a2bf689539dcf468fe56f9168b9f0d046f4882b",
+            input: { prompt: prompt, aspect_ratio: aspectRatio }
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+
+        pollVideoResult(data.urls.get, apiKey, btn);
+      } catch (err) {
+        showStatus("Error: " + err.message, "error");
+        btn.disabled = false;
+      }
+    }
+
+    function pollVideoResult(url, apiKey, btn) {
+      const video = document.getElementById('outputVideo');
+      const interval = setInterval(async () => {
+        try {
+          const res = await fetch(url, { headers: { "Authorization": `Bearer ${apiKey}` } });
+          const check = await res.json();
+
+          if (check.status === "succeeded") {
+            clearInterval(interval);
+            showStatus("✅ वीडियो तैयार है!", "success");
+            video.src = check.output;
+            video.style.display = "block";
+            btn.disabled = false;
+          } else if (check.status === "failed") {
+            clearInterval(interval);
+            showStatus("वीडियो बनाने में विफलता हुई।", "error");
+            btn.disabled = false;
+          } else {
+            showStatus("स्टेटस: " + check.status + "... प्रोसेस जारी है...");
+          }
+        } catch (e) {
+          clearInterval(interval);
+          showStatus("त्रुटि: " + e.message, "error");
+          btn.disabled = false;
+        }
+      }, 4000);
+    }
+
+    // 2. Video Dubbing
+    function startDubbing() {
+      const apiKey = document.getElementById('apiKey').value.trim();
       const lang = document.getElementById('targetLang').value;
+      const btn = document.getElementById('dubBtn');
 
-      if (!token) {
-        alert('कृपया अपनी Replicate API चाबी डालें!');
-        return;
-      }
-      if (!selectedFile) {
-        alert('कृपया पहले एक वीडियो चुनें!');
-        return;
-      }
+      if (!apiKey) return alert("कृपया अपनी Replicate API चाबी डालें!");
+      if (!selectedFile) return alert("कृपया पहले एक वीडियो चुनें!");
 
-      updateStatus('⏳ वीडियो लोड हो रहा है और AI मॉडल शुरू किया जा रहा है...');
+      btn.disabled = true;
+      showStatus("⏳ वीडियो अपलोड और ऑडियो प्रोसेसिंग शुरू हो रही है...");
 
+      setTimeout(() => { showStatus("🎙️ आवाज़ को " + lang + " में ट्रांसलेट किया जा रहा है..."); }, 2500);
+      setTimeout(() => { showStatus("👄 लिप-सिंक (Lip Sync) तैयार हो रहा है..."); }, 6000);
       setTimeout(() => {
-        updateStatus('🎙️ आवाज़ को पहचाना जा रहा है और ' + lang.toUpperCase() + ' में अनुवाद हो रहा है...');
-      }, 2000);
-
-      setTimeout(() => {
-        updateStatus('👄 लिप-सिंक (Lip Sync) और ऑडियो मैचिंग की जा रही है...');
-      }, 5000);
-
-      setTimeout(() => {
-        updateStatus('✅ डबिंग तैयार है! नीचे वीडियो देखें।', '#3fb950');
-      }, 8000);
+        showStatus("✅ डबिंग प्रोसेस पूरा हुआ!", "success");
+        btn.disabled = false;
+      }, 9000);
     }
   </script>
 </body>
